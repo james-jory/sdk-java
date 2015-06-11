@@ -329,9 +329,18 @@ public class Transaction extends net.authorize.Transaction {
 			
 			cc_el.appendChild(cc_exp_el);
 
-			Element card_code_el = document.createElement(AuthNetField.ELEMENT_CARD_CODE.getFieldName());
-			card_code_el.appendChild(document.getDocument().createTextNode(credit_card.getCardCode()));
-			cc_el.appendChild(card_code_el);
+			// Only include the card code when specified. Otherwise, if an empty element is submitted, the 
+			// request will be rejected due to XML schema validation. When updating existing payment profiles
+			// you have to request the existing payment details before submitting the update. The cc & expiry 
+			// fields are already protected for roundtrip updates like this but since card code isn't supposed 
+			// to be persisted, it's not available to resubmit with the update.
+			// https://github.com/AuthorizeNet/sdk-java/issues/45
+			String cardCode = credit_card.getCardCode();
+			if (cardCode != null && cardCode.trim().length() > 0) { 
+				Element card_code_el = document.createElement(AuthNetField.ELEMENT_CARD_CODE.getFieldName());
+				card_code_el.appendChild(document.getDocument().createTextNode(cardCode));
+				cc_el.appendChild(card_code_el);
+			}
 
 			payment_el.appendChild(cc_el);
 		}
